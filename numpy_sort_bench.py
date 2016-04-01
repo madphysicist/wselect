@@ -2,7 +2,17 @@
 Joseph Fox-Rabinovitz - 01 Apr 2016
 """
 
-import numpy, pandas, timeit
+import timeit, platform
+import numpy, pandas, seaborn
+from matplotlib import pyplot
+
+#
+# Global info
+#
+
+hostname = platform.uname().node
+outputFile = __file__.replace('.py', '_{hostname}.csv'.format(
+                                                hostname=hostname))
 
 #
 # Set up benchmark properties
@@ -31,25 +41,53 @@ sort_kinds = ['quicksort', 'mergesort', 'heapsort']
 # Set up output data frame
 #
 
-index = pandas.MultiIndex.from_product((sort_kinds, array_types.keys(), array_lengths),
-                                       names=['sort', 'type', 'length'])
+index = pandas.MultiIndex.from_product(([hostname], sort_kinds, array_types.keys(), array_lengths),
+                                       names=['host', 'sort', 'type', 'length'])
 
-# TODO: Eventually, try to read df from __file__.replace(.py, .csv).
+# TODO: Eventually, try to read df from `outputFile`, only fill in missing elements
 
+# This is really just a series since there is only one column. A
+# DataFrame is preferred since it names the column, saving a step later
+# on. It also makes future expansion easier.
 df = pandas.DataFrame(index=index, columns=['time'])
 
 #
 # Perform benchmark
 #
 
-for length in array_lengths:
-    for kind in sort_kinds:
-        for atype, handler in array_types.items():
-            print('{0}, {1}, {2}'.format(kind, atype, length), end='')
-            times = timeit.repeat('numpy.sort(x, kind=kind)',
-                  setup='import numpy; numpy.random.seed(0); x = handler(numpy.arange(length, dtype=numpy.float_))',
-                  repeat=2, number=1, globals={'length': length, 'kind': kind, 'handler': handler})
-            df[kind, atype, length] = min(times)
-            print(min(times))
+try:
+    for length in array_lengths:
+        for kind in sort_kinds:
+            for atype, handler in array_types.items():
+                print('{kind:10}, {atype:15}, {length:10}, '.format(
+                        kind=kind, atype=atype, length=length), end='')
+                times = timeit.repeat('numpy.sort(x, axis=None, kind=kind)',
+                      setup='import numpy; numpy.random.seed(0); '
+                            'x = handler(numpy.arange(length, '
+                                                'dtype=numpy.float_))',
+                      repeat=5, number=1,
+                      globals={'length': length, 'kind': kind,
+                               'handler': handler})
+                df['time'][hostname, kind, atype, length] = min(times)
+                print(min(times))
+except KeyboardInterrupt:
+    print("\nPremaure termination. No worries.")
 
-# TODO: Save DF to CSV
+#
+# Save DF to CSV
+#
+df.to_csv(outputFile)
+
+#
+# Plot what you got
+#
+# x: length
+# y: time
+# color: kind
+# style: atype
+#
+
+seaborn.factorplot(x='length', y='time', hue='sort', row='type', data=df.reset_index(), ci=None)
+#seaborn.pointplot(x='length', y='time', hue='sort', data=df.reset_index(), ci=None)
+pyplot.show()
+

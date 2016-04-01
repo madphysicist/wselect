@@ -1,3 +1,7 @@
+# Program outputs
+*.csv
+
+# External application byproducts
 .~lock.*#
 *.pyc
 __pycache__
