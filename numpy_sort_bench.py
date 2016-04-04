@@ -196,38 +196,69 @@ with rc_context(rc={'interactive': True}):
     # The following is based on http://stackoverflow.com/a/36371454/2988730
 
     legend1_lines = []
-    fig1, axes1 = pyplot.subplots(2, int(math.ceil(len(array_types) / 2)))
+
+    ax1 = None
+    ax1Counter = 1
+    ax1Rows = 2
+    ax1Cols = int(math.ceil(len(array_types) / 2))
+
+    fig1 = pyplot.figure()
     for dtype in array_dtypes:
-        for atype, ax in zip(array_types.keys(), axes1.ravel()):
+        for atype in array_types.keys():
+            ax = fig1.add_subplot(ax1Rows, ax1Cols, ax1Counter,
+                                  sharex=ax1, sharey=ax1)
             for kind in sort_kinds.keys():
                 rows = (hostname, kind, atype)
                 ln, = ax.plot(df.loc[rows, 'time'])
-                ax.set_title(atype)
-                if ax == axes1[0, 0]:
-                    ln.set_label(kind)
+                if ax1Counter == 1:
+                    ax1 = ax
                     legend1_lines.append(ln)
-            ax.set_ylabel('Array Size')
+            ax.set_title(atype)
+            ax.set_xlabel('Array Size')
             ax.set_ylabel('Runtime (s)')
-            ax.set_sharex(ax[0, 0])
-            ax.set_sharey(ax[0, 0])
-    axes1[-1, -1].legend(legend1_lines, bbox_to_anchor=(1.05, 1.1), loc=2, borderaxespad=0.)
+            ax1Counter += 1
+    if len(array_types) % 2:
+        obj = fig1
+        loc = 'center'
+        anchor = (1.0 - 0.5 / ax1Cols, 0.5 / ax1Rows)
+    else:
+        obj = ax
+        loc = 'center left'
+        anchor = (1.1, 1.1)
+    obj.legend(legend1_lines, list(sort_kinds.keys()), loc=loc, bbox_to_anchor=anchor)
     fig1.suptitle('Comparison of Algorithm Runtime by Input Type')
 
     legend2_lines = []
-    fig2, axes2 = pyplot.subplots(2, int(math.ceil(len(sort_kinds) / 2)),
-                                  sharex=True, sharey=True)
-    if len(sort_kinds) % 2:
-        fig2.delaxes(axes2[-1, -1])
+
+    ax2 = None
+    ax2Counter = 1
+    ax2Rows = 2
+    ax2Cols = int(math.ceil(len(sort_kinds) / 2))
+
+    fig2 = pyplot.figure()
     for dtype in array_dtypes:
-        for kind, ax in zip(sort_kinds.keys(), axes2.ravel()):
+        for kind in sort_kinds.keys():
+            ax = fig2.add_subplot(ax2Rows, ax2Cols, ax2Counter,
+                                  sharex=ax2, sharey=ax2)
             for atype in array_types.keys():
                 rows = (hostname, kind, atype)
                 ln, = ax.plot(df.loc[rows, 'time'])
-                ax.set_title(kind)
-                if ax == axes2[0, 0]:
-                    ln.set_label(atype)
+                if ax2Counter == 1:
+                    ax2 = ax
                     legend2_lines.append(ln)
-    axes2[0, 0].legend(legend2_lines, bbox_to_anchor=(0.0, 0.0), loc=2, borderaxespad=0.)
+            ax.set_title(kind)
+            ax.set_xlabel('Array Size')
+            ax.set_ylabel('Runtime (s)')
+            ax2Counter += 1
+    if len(sort_kinds) % 2:
+        obj = fig2
+        loc = 'center'
+        anchor = (1.0 - 0.5 / ax2Cols, 0.5 / ax2Rows)
+    else:
+        obj = ax
+        loc = 'center left'
+        anchor = (1.1, 1.1)
+    obj.legend(legend2_lines, list(array_types.keys()), loc=loc, bbox_to_anchor=anchor)
     fig2.suptitle('Comparison of Runtime for Input Types by Algorithm')
 
     from IPython import embed
