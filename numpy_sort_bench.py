@@ -4,7 +4,7 @@ Benchmark of the existing numpy sorting algorithms.
 Joseph Fox-Rabinovitz - 01 Apr 2016
 """
 
-import timeit, platform, numpy, pandas
+import timeit, platform, math, numpy, pandas
 from collections import OrderedDict
 from matplotlib import pyplot, rc_context, lines
 
@@ -134,7 +134,8 @@ the sort can be in-place or not. The return value is ignored either way.
 
 # TODO: The number of index columns should depend on the __version__
 try:
-    df = pandas.read_csv('numpy_sort_bench_joe-arch-pc.csv', index_col=numpy.arange(4))
+    df = pandas.read_csv(outputFile, index_col=numpy.arange(4))
+    data_cols = list(df.columns[2:])
 except (OSError, IndexError):
     index = pandas.MultiIndex.from_product(([hostname], sort_kinds, array_types.keys(), array_lengths),
                                            names=['host', 'sort', 'type', 'length'])
@@ -153,10 +154,10 @@ try:
         for dtype in array_dtypes:
             for kind, sort in sort_kinds.items():
                 for atype, gen in array_types.items():
-                    print('{kind:10} {atype:15} {length:10} {dtype:25}'.format(
-                            kind=kind, atype=atype, length=length, dtype=repr(dtype)), end='')
                     row = (hostname, kind, atype, length)
                     if pandas.isnull(df.loc[row, 'time']):
+                        print('{kind:10} {atype:15} {length:10} {dtype:25}'.format(
+                                kind=kind, atype=atype, length=length, dtype=repr(dtype)), end='')
                         times = timeit.repeat(sort,
                               setup='import numpy; numpy.random.seed(0); '
                                     'x = gen(numpy.arange(length, '
@@ -170,10 +171,8 @@ try:
                         df.loc[row, data_cols] = times
                         df.loc[row, 'time'] = time
                         df.loc[row, 'sigma'] = sigma
-                    else:
-                        time = df.loc[row, 'time']
-                        sigma = df.loc[row, 'sigma']
-                    print('{time} +/- {sigma}'.format(time=time, sigma=sigma))
+
+                        print('{time} +/- {sigma}'.format(time=time, sigma=sigma))
 except KeyboardInterrupt:
     print("\nPremaure termination. No worries.")
 
@@ -187,35 +186,50 @@ df.to_csv(outputFile)
 #
 # x: length
 # y: time
+# plot: atype
 # color: kind (cycled automatically by mpl)
-# style: atype
 #
 
 styles = ['solid', 'dashed', 'dashdot', 'dotted']
 
 with rc_context(rc={'interactive': True}):
-    legend_labels = list(sort_kinds.keys()) + list(array_types.keys())
-    legend_colors = []
-    legend_styles = ['solid'] * len(sort_kinds) + styles
-
     # The following is based on http://stackoverflow.com/a/36371454/2988730
-    fig, ax = pyplot.subplots()
-    for dtype in array_dtypes:
-        for kind in sort_kinds.keys():
-            color = None
-            for atype, style in zip(array_types.keys(), styles):
-                rows = (hostname, kind, atype)
-                if style == styles[0]:
-                    color = None
-                ln = ax.plot(df.loc[rows, 'time'], color=color, linestyle=style)
-                if style == styles[0]:
-                    color = ln[0].get_color()
-                    legend_colors.append(color)
 
-    legend_colors.extend([(0, 0, 0)] * len(array_types))
-    legend_lines = [lines.Line2D([], [], color=color, linestyle=style) 
-                        for color, style in zip(legend_colors, legend_styles)]
-    ax.legend(legend_lines, legend_labels)
+    legend1_lines = []
+    fig1, axes1 = pyplot.subplots(2, int(math.ceil(len(array_types) / 2)))
+    for dtype in array_dtypes:
+        for atype, ax in zip(array_types.keys(), axes1.ravel()):
+            for kind in sort_kinds.keys():
+                rows = (hostname, kind, atype)
+                ln, = ax.plot(df.loc[rows, 'time'])
+                ax.set_title(atype)
+                if ax == axes1[0, 0]:
+                    ln.set_label(kind)
+                    legend1_lines.append(ln)
+            ax.set_ylabel('Array Size')
+            ax.set_ylabel('Runtime (s)')
+            ax.set_sharex(ax[0, 0])
+            ax.set_sharey(ax[0, 0])
+    axes1[-1, -1].legend(legend1_lines, bbox_to_anchor=(1.05, 1.1), loc=2, borderaxespad=0.)
+    fig1.suptitle('Comparison of Algorithm Runtime by Input Type')
+
+    legend2_lines = []
+    fig2, axes2 = pyplot.subplots(2, int(math.ceil(len(sort_kinds) / 2)),
+                                  sharex=True, sharey=True)
+    if len(sort_kinds) % 2:
+        fig2.delaxes(axes2[-1, -1])
+    for dtype in array_dtypes:
+        for kind, ax in zip(sort_kinds.keys(), axes2.ravel()):
+            for atype in array_types.keys():
+                rows = (hostname, kind, atype)
+                ln, = ax.plot(df.loc[rows, 'time'])
+                ax.set_title(kind)
+                if ax == axes2[0, 0]:
+                    ln.set_label(atype)
+                    legend2_lines.append(ln)
+    axes2[0, 0].legend(legend2_lines, bbox_to_anchor=(0.0, 0.0), loc=2, borderaxespad=0.)
+    fig2.suptitle('Comparison of Runtime for Input Types by Algorithm')
 
     from IPython import embed
     embed()
+
