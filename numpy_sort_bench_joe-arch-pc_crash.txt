@@ -1,0 +1,21 @@
+Original version up to max_pow = 10^9 crashed on iteration
+
+quicksort  median-killer    300000000 <class 'numpy.float64'>  Traceback (most recent call last):
+  File "numpy_sort_bench.py", line 140, in <module>
+    'dtype': dtype, 'gen': gen})
+  File "/usr/lib64/python3.5/timeit.py", line 218, in repeat
+    return Timer(stmt, setup, timer, globals).repeat(repeat, number)
+  File "/usr/lib64/python3.5/timeit.py", line 206, in repeat
+    t = self.timeit(number)
+  File "/usr/lib64/python3.5/timeit.py", line 178, in timeit
+    timing = self.inner(it, self.timer)
+  File "<timeit-src>", line 3, in inner
+  File "numpy_sort_bench.py", line 66, in <lambda>
+    'median-killer': lambda x: numpy.concatenate((numpy.stack((x[0:len(x)//2:2], x[len(x)//2::2])).T.ravel(), x[1::2]))
+MemoryError
+
+real	596m59.707s
+user	152m33.362s
+sys	9m23.787s
+
+Last three lines are output of `time`
