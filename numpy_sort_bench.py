@@ -15,6 +15,8 @@ import seaborn
 # Global info
 #
 
+# TODO: -h parameter to set hostname, -n: new, -r: repeats -m: max_pow -o: output_file
+
 __version__ = '0.0.1'
 """
 The version of this script.
@@ -32,7 +34,7 @@ The name of the computer on which this test is running.
 This is used to fill in missing data depending on the machine.
 """
 
-outputFile = __file__.replace('.py', '_{hostname}.csv'.format(
+output_file = __file__.replace('.py', '_{hostname}.csv'.format(
                                                 hostname=hostname))
 """
 The name of the output CSV file.
@@ -134,7 +136,7 @@ the sort can be in-place or not. The return value is ignored either way.
 
 # TODO: The number of index columns should depend on the __version__
 try:
-    df = pandas.read_csv(outputFile, index_col=numpy.arange(4))
+    df = pandas.read_csv(output_file, index_col=numpy.arange(4))
     data_cols = list(df.columns[2:])
 except (OSError, IndexError):
     index = pandas.MultiIndex.from_product(([hostname], sort_kinds, array_types.keys(), array_lengths),
@@ -179,7 +181,7 @@ except KeyboardInterrupt:
 #
 # Save DF to CSV
 #
-df.to_csv(outputFile)
+df.to_csv(output_file)
 
 #
 # Plot DF
