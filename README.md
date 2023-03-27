@@ -1,3 +1,5 @@
+This project has moved to GitLab: https://gitlab.com/madphysicist/wselect. Please download the latest code and submit issues there rather than GitHub, which will no longer be monitored until this stale clone is deleted.
+
 # wselect
 This is a temporary repo containing the development of a set of benchmarks for some new algorithms I am adding to numpy.
 
